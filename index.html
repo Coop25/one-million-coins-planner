@@ -130,6 +130,31 @@ footer{padding:0 16px 12px;text-align:center;color:#6f6a5a;font-size:11px}
 #stats td.no{color:var(--dim)}
 .boxhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 
+#run{position:fixed;inset:0;z-index:45;display:none;flex-direction:column;gap:10px;padding:10px 16px 12px;background:var(--bg);container-type:size}
+#run.show{display:flex}
+.rtop{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.rtop b{margin-right:auto;font:400 20px/1 var(--title);letter-spacing:1px;color:#f7e6b0}
+.rtop .btn{font-size:14px;padding:5px 9px}
+.rbar{height:6px;background:#0f0e0b;border-radius:3px;overflow:hidden;flex:none}
+.rbar i{display:block;height:100%;background:var(--gold)}
+.rgo{flex:1;min-height:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.4cqh;padding:8px 10px;text-align:center;overflow:hidden;
+  border:3px solid var(--c);border-radius:12px;background:linear-gradient(color-mix(in srgb,var(--c) 24%,#14130f),#14130f)}
+.rgo:active{filter:brightness(1.25)}
+.rmove{font:400 clamp(18px,6cqw,34px)/1 var(--title);letter-spacing:1.5px;color:var(--c);text-shadow:1px 1px 0 #000}
+.rname{font:400 clamp(32px,11cqw,88px)/1 var(--title);letter-spacing:1.5px;color:#fff3cf;text-shadow:2px 2px 0 #000;overflow-wrap:anywhere}
+.rfacts{font-size:clamp(14px,3.6cqw,22px);font-weight:800;color:var(--ink)}
+.rfacts em{font-style:normal;color:var(--gold2)}
+.rmap{width:min(100%,560px);flex:0 1 auto;min-height:0;max-height:34cqh}
+.rmap .dim{fill:#3b382f}.rmap .got{fill:#8c6a18}.rmap .soon{fill:#ece4cf}
+.rmap .now{fill:var(--gold2);stroke:#fff;stroke-width:1.5}
+.rhint{font-size:12px;color:var(--dim)}
+.rlist{list-style:none;margin:0;padding:0;flex:none}
+.rlist li{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1px solid #2f2d26;font-weight:700}
+.rlist li i{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.rlist span{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rlist small{color:var(--gold2);font-size:12px}
+@container (max-height:480px){.rlist li:nth-child(n+2){display:none}.rhint{display:none}}
+
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;background:#0f0e0b;border:1px solid var(--gold);border-radius:6px;padding:7px 14px;opacity:0;transition:opacity .15s;pointer-events:none;max-width:calc(100vw - 32px)}
 #toast.show{opacity:1}
 
@@ -150,6 +175,7 @@ footer{padding:0 16px 12px;text-align:center;color:#6f6a5a;font-size:11px}
 <header class="top">
   <h1>Proficiencies</h1>
   <select class="btn" id="preset" aria-label="Load a preset build"><option value="">Presets…</option></select>
+  <button class="btn primary" id="runBtn">Run mode</button>
   <button class="btn" id="statsBtn">Stats</button>
   <div class="pill" id="pts"><i></i><span>0 / 128 points</span></div>
   <button class="btn" id="reset">Reset</button>
@@ -185,6 +211,7 @@ footer{padding:0 16px 12px;text-align:center;color:#6f6a5a;font-size:11px}
 
 <div id="tip" role="tooltip"></div>
 <div id="stats" role="dialog" aria-modal="true" aria-label="Build stats"><div class="box" id="statsBox"></div></div>
+<div id="run" role="dialog" aria-modal="true" aria-label="Run mode"></div>
 <div id="toast" role="status"></div>
 
 <script>
@@ -547,7 +574,117 @@ function showStats() {
 }
 function closeStats() { $("stats").classList.remove("show"); $("statsBtn").focus(); }
 
+/* Run mode: one next skill at a time, tapped through during a live run. */
+const runEl = $("run");
+const run = {pos: 0, pip: null, lock: null};
+const runKey = () => "omc-run:" + toB64(state.order);
+function saveRun() { try { localStorage.setItem(runKey(), String(run.pos)); } catch (e) {} }
+function loadRun() {
+  let saved = 0;
+  try { saved = parseInt(localStorage.getItem(runKey())) || 0; } catch (e) {}
+  run.pos = Math.min(saved, state.order.length);
+}
+function miniMap(pos) {
+  const cell = 9, gap = 7;
+  let x = 0, out = "";
+  for (const t of TREES) {
+    const w = t.lanes * cell, target = skills[state.order[pos]]?.tree === t.i;
+    if (target) out += `<rect x="${x - 2}" y="-2" width="${w + 4}" height="${13 * cell + 4}" rx="3" fill="${t.c}" opacity=".28"/>`;
+    for (const s of skills.filter(n => n.tree === t.i)) {
+      const p = state.order.indexOf(s.idx);
+      const cls = p === pos ? "now" : p >= 0 && p < pos ? "got" : p > pos && p <= pos + 3 ? "soon" : "dim";
+      const lane = t.lanes === 1 ? 0 : s.lane + 1;
+      out += `<circle class="${cls}" cx="${x + (lane + .5) * cell}" cy="${(s.tier + .5) * cell}" r="${cls === "now" ? 4.4 : 2.4}"/>`;
+    }
+    x += w + gap;
+  }
+  return `<svg class="rmap" viewBox="-3 -3 ${x - gap + 6} ${13 * cell + 6}" aria-hidden="true">${out}</svg>`;
+}
+function renderRun() {
+  const total = state.order.length, steps = coinsForStep(state.order), p = run.pos;
+  const popBtn = "documentPictureInPicture" in window && !run.pip ? `<button class="btn" data-a="pop">Pop out</button>` : "";
+  const top = `<div class="rtop"><b>Step ${Math.min(p + 1, total)} of ${total}</b>${popBtn}<button class="btn" data-a="back">Back</button><button class="btn" data-a="restart">Restart</button><button class="btn" data-a="exit">Exit</button></div>
+    <div class="rbar"><i style="width:${p / Math.max(1, total) * 100}%"></i></div>`;
+  if (p >= total) {
+    runEl.innerHTML = top + `<button class="rgo" style="--c:var(--gold)" data-a="restart"><span class="rname">Route done</span><span class="rfacts">Tap to restart</span></button>`;
+    return;
+  }
+  const s = skills[state.order[p]], t = treeOf[s.tree];
+  const prev = p ? skills[state.order[p - 1]].tree : -1;
+  const laneName = s.tier % 1 ? "side branch" : t.lanes === 1 ? "only lane" : ["left", "middle", "right"][s.lane + 1];
+  const soon = state.order.slice(p + 1, p + 4).map((i, n) => {
+    const x = skills[i], c = treeOf[x.tree];
+    return `<li style="--c:${c.c}"><i></i><span>${esc(x.name)}</span><small>${esc(c.name)} · ${fmt(steps[p + 1 + n].need)}</small></li>`;
+  }).join("");
+  runEl.innerHTML = top + `<button class="rgo" style="--c:${t.c}" data-a="go">
+      <span class="rmove">${s.tree === prev ? "Stay in" : "Go to"} ${t.name}</span>
+      <span class="rname">${esc(s.name)}</span>
+      <span class="rfacts">${s.cost} pt${s.cost > 1 ? "s" : ""} · <em>${fmt(steps[p].need)} coins</em> · Row ${Math.floor(s.tier) + 1}, ${laneName}</span>
+      ${miniMap(p)}
+      <span class="rhint">Tap, or press Space, once it's bought</span>
+    </button><ol class="rlist">${soon}</ol>`;
+}
+function stepRun(by) {
+  run.pos = Math.max(0, Math.min(state.order.length, run.pos + by));
+  saveRun();
+  renderRun();
+}
+function restartRun() { run.pos = 0; saveRun(); renderRun(); }
+async function keepAwake() {
+  try { run.lock = await navigator.wakeLock.request("screen"); } catch (e) { run.lock = null; }
+}
+function openRun() {
+  if (!state.order.length) { toast("Add some skills first"); return; }
+  hideTip();
+  loadRun();
+  runEl.classList.add("show");
+  renderRun();
+  keepAwake();
+}
+function closeRun() {
+  runEl.classList.remove("show");
+  run.lock?.release().catch(() => {});
+  run.lock = null;
+  run.pip?.close();
+}
+async function popOut() {
+  let w;
+  try {
+    w = await documentPictureInPicture.requestWindow({width: 340, height: 520});
+  } catch (e) {
+    toast("This browser can't pop out. Try Chrome or Edge, or use your phone.");
+    return;
+  }
+  document.head.querySelectorAll("style,link[rel=stylesheet]").forEach(n => w.document.head.append(n.cloneNode(true)));
+  w.document.title = "Next skill";
+  w.document.body.append(runEl);
+  w.document.addEventListener("keydown", onRunKey);
+  w.addEventListener("pagehide", () => { document.body.append(runEl); run.pip = null; renderRun(); });
+  run.pip = w;
+  renderRun();
+}
+function onRunKey(e) {
+  if (!runEl.classList.contains("show")) return;
+  const go = [" ", "Enter", "ArrowRight"].includes(e.key), back = ["ArrowLeft", "Backspace"].includes(e.key);
+  if (go || back) { e.preventDefault(); if (!e.repeat) stepRun(go ? 1 : -1); }
+  else if (e.key === "Escape") closeRun();
+}
+
 function bind() {
+  $("runBtn").onclick = openRun;
+  runEl.addEventListener("click", (e) => {
+    const a = e.target.closest("[data-a]")?.dataset.a;
+    if (e.detail === 0 && (a === "go" || a === "back")) return;
+    if (a === "go") stepRun(1);
+    else if (a === "back") stepRun(-1);
+    else if (a === "restart") restartRun();
+    else if (a === "exit") closeRun();
+    else if (a === "pop") popOut();
+  });
+  document.addEventListener("keydown", onRunKey);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && runEl.classList.contains("show") && !run.lock) keepAwake();
+  });
   for (const [id, key] of [["mName", "name"], ["mAuthor", "author"], ["mTime", "time"], ["mNotes", "notes"]]) {
     $(id).addEventListener("input", (e) => { state[key] = e.target.value; syncUrl(); });
   }
