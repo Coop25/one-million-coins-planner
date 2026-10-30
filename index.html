@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One Million Coins Build Planner</title>
+<meta name="description" content="Plan, order and share One Million Coins skill builds. Every proficiency, cost and coin threshold is built in, and each link carries its own build.">
+<meta name="theme-color" content="#14130f">
+<meta property="og:type" content="website">
+<meta property="og:title" content="One Million Coins Build Planner">
+<meta property="og:description" content="Plan your proficiency order, see the coins needed at every step, and share the build as a link.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="One Million Coins Build Planner">
+<meta name="twitter:description" content="Plan your proficiency order and share the build as a link.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23f2b92c' stroke='%237a5310' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%237a5310' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14130f;--panel:#1f1e19;--panel2:#2a2822;--line:#4a4638;--line2:#6b6552;
+  --ink:#ece4cf;--dim:#9c9582;--gold:#f2b92c;--gold2:#ffd869;--red:#e0584d;--good:#7fc97a;
+  --lane:42px;--row:46px;--node:32px;
+  --title:"Bangers","Impact",sans-serif;--body:"Nunito","Trebuchet MS",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:600 14px/1.35 var(--body)}
+body{min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;
+  background:radial-gradient(1100px 500px at 50% -10%,#2b2719 0,transparent 70%),var(--bg)}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+
+.top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 16px 0;padding:8px 14px;
+  background:linear-gradient(#34322a,#24231d);border:1px solid var(--line2);border-radius:8px;box-shadow:0 2px 0 #000,inset 0 1px 0 #55503f}
+.top h1{margin:0 auto 0 0;font:400 30px/1 var(--title);letter-spacing:1.5px;color:#f7e6b0;transform:skewX(-6deg);text-shadow:2px 2px 0 #000}
+.btn{background:linear-gradient(#45423a,#2f2d27);border:1px solid var(--line2);border-radius:5px;padding:6px 12px;
+  font:400 16px/1 var(--title);letter-spacing:1px;box-shadow:0 2px 0 #000}
+.btn:hover{border-color:var(--gold);color:var(--gold2)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(#b98a1c,#7d5b10);border-color:var(--gold);color:#fff3cf}
+select.btn{padding:5px 8px;max-width:230px}
+select.btn option{font-family:var(--body);background:var(--panel)}
+.pill{display:flex;align-items:center;gap:8px;background:#0f0e0b;border:1px solid var(--line);border-radius:6px;padding:5px 12px;
+  font:400 17px/1 var(--title);letter-spacing:1px;white-space:nowrap}
+.pill i{width:14px;height:14px;border-radius:50%;background:var(--gold);border:2px solid #7a5310;display:block}
+.pill.over{color:var(--red);border-color:var(--red)}
+
+.main{flex:1;display:flex;gap:12px;align-items:flex-start;margin:12px 16px;min-width:0}
+.treewrap{flex:1;min-width:0;overflow-x:auto;padding-bottom:6px}
+.tree{display:flex;gap:6px;width:max-content;margin:0 auto}
+.col{position:relative;background:rgba(10,10,8,.5);border:1px solid var(--line);border-radius:8px;padding-top:40px;
+  border-color:color-mix(in srgb,var(--c) 38%,var(--line));
+  background:linear-gradient(color-mix(in srgb,var(--c) 11%,transparent),rgba(10,10,8,.45) 40%)}
+.col h2{position:absolute;top:6px;left:6px;right:6px;margin:0;padding:4px 0 3px;text-align:center;border-radius:4px;
+  background:linear-gradient(#3b382f,#27251f);border:1px solid var(--line2);color:var(--c);
+  font:400 17px/1 var(--title);letter-spacing:1px;text-shadow:1px 1px 0 #000;white-space:nowrap}
+.col h2 small{font-size:12px;color:var(--dim);margin-left:3px}
+.col svg.edges{position:absolute;left:0;top:40px;pointer-events:none;overflow:visible}
+.edges line{stroke:#3e3b31;stroke-width:2}
+.edges line.on{stroke:var(--gold);stroke-width:3}
+.edges line.next{stroke:#7b6a3a}
+.edges line.path{stroke:var(--gold2);stroke-dasharray:4 3;stroke-width:2}
+.field{position:relative}
+
+.node{position:absolute;width:var(--node);height:var(--node);padding:0;display:grid;place-items:center;background:#17160f;border:2px solid #4e4a3d;color:#7d7766;border-radius:50%;transition:transform .08s}
+.node svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.node.sq{border-radius:6px;width:36px;height:36px}
+.node.key{border-radius:5px;transform:rotate(45deg);width:32px;height:32px}
+.node.key svg{transform:rotate(-45deg)}
+.node.mini{scale:.78;z-index:2}
+.node:hover{transform:scale(1.15);z-index:5}
+.node.key:hover{transform:rotate(45deg) scale(1.15)}
+.node.avail{border-color:#a08c55;color:#d8c99b}
+.node.on{border-color:var(--gold);color:var(--gold2);background:#3a2c0b;box-shadow:0 0 9px rgba(242,185,44,.55)}
+.node.pathhi{border-color:var(--gold2);border-style:dashed;color:var(--gold2)}
+.node .n{position:absolute;right:-7px;bottom:-6px;min-width:16px;height:15px;padding:0 3px;border-radius:8px;background:var(--gold);color:#241a02;font:800 10px/15px var(--body);text-align:center}
+.node.key .n{transform:rotate(-45deg);right:-9px;bottom:auto;top:18px}
+.node .c{position:absolute;left:-5px;top:-5px;width:14px;height:14px;border-radius:50%;background:#0f0e0b;border:1px solid var(--line2);color:var(--ink);font:800 9px/12px var(--body);text-align:center}
+.node.key .c{transform:rotate(-45deg);left:-7px;top:9px}
+
+.side{width:330px;flex:none;display:flex;flex-direction:column;gap:10px;position:sticky;top:12px;max-height:calc(100vh - 24px)}
+.card{background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:10px}
+.card h3{margin:0 0 8px;font:400 18px/1 var(--title);letter-spacing:1px;color:#f7e6b0}
+.meta label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px}
+.meta input,.meta textarea{display:block;width:100%;margin-top:2px;background:#0f0e0b;border:1px solid var(--line);border-radius:5px;padding:5px 7px;color:var(--ink);resize:vertical}
+.meta .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.actions .btn{flex:1;white-space:nowrap}
+.orderc{min-height:0;flex:1;display:flex;flex-direction:column}
+.orderhead{display:flex;justify-content:space-between;align-items:baseline}
+.orderhead span{font-size:12px;color:var(--dim)}
+#order{list-style:none;margin:0;padding:0;overflow:auto;flex:1;min-height:130px}
+#order li{display:grid;grid-template-columns:24px 1fr auto 40px;gap:6px;align-items:center;padding:4px 4px;border-bottom:1px solid #2f2d26;cursor:grab}
+#order li:hover,#order li.hi{background:#2b281d}
+#order li.bad{color:var(--red)}
+#order li.dragover{box-shadow:inset 0 2px 0 var(--gold)}
+#order .i{color:var(--dim);font-size:12px;text-align:right}
+#order .nm{min-width:0}
+#order .nm b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#order .nm small{color:var(--dim);font-size:11px}
+#order .nm small em{font-style:normal;color:var(--c)}
+#order .co{font-size:12px;color:var(--gold2);text-align:right;white-space:nowrap}
+#order .mv{display:flex;gap:2px}
+#order .mv button{width:19px;height:22px;padding:0;background:var(--panel2);border:1px solid var(--line);border-radius:3px;font-size:9px;color:var(--dim)}
+#order .mv button:hover{color:var(--gold2);border-color:var(--gold)}
+.empty{color:var(--dim);padding:14px 4px}
+
+.hints{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;padding:6px 16px 4px;color:var(--dim);font-size:12px}
+.hints b{display:inline-block;background:#e9dfc4;color:#1c1a12;border-radius:3px;padding:0 5px;margin-right:4px;font-weight:800}
+footer{padding:0 16px 12px;text-align:center;color:#6f6a5a;font-size:11px}
+
+#tip{position:fixed;z-index:50;width:280px;background:#262a24;border:1px solid #6f7d68;border-radius:6px;padding:10px 12px;pointer-events:none;box-shadow:0 6px 18px #000;display:none}
+#tip h4{margin:0;font:400 19px/1.05 var(--title);letter-spacing:1px;color:var(--gold2)}
+#tip .tag{font-size:11px;font-weight:800;letter-spacing:.6px;color:#c9d4bd;margin:2px 0 7px}
+#tip p{margin:0 0 8px;color:var(--ink)}
+#tip .st{font-size:12px;color:var(--dim)}
+#tip .st.warn{color:var(--red)}
+#tip .st.ok{color:var(--good)}
+
+#stats{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;padding:16px}
+#stats.show{display:flex}
+#stats .box{width:min(560px,100%);max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:14px}
+#stats .bar{display:grid;grid-template-columns:76px 1fr 34px;gap:8px;align-items:center;margin-bottom:5px;font-size:13px}
+#stats .bar div{height:10px;background:#0f0e0b;border-radius:5px;overflow:hidden}
+#stats .bar i{display:block;height:100%;background:var(--c)}
+#stats table{width:100%;border-collapse:collapse;margin-top:6px}
+#stats td{padding:3px 0;border-bottom:1px solid #2f2d26}
+#stats td:last-child{text-align:right;color:var(--gold2)}
+#stats td.no{color:var(--dim)}
+.boxhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;background:#0f0e0b;border:1px solid var(--gold);border-radius:6px;padding:7px 14px;opacity:0;transition:opacity .15s;pointer-events:none;max-width:calc(100vw - 32px)}
+#toast.show{opacity:1}
+
+@media (max-width:1180px){
+  .main{flex-direction:column;align-items:stretch}
+  .side{width:auto;position:static;max-height:none}
+  #order{max-height:360px}
+}
+@media (max-width:560px){
+  .top{margin:8px 16px 0}.main{margin:8px 16px}
+  .top h1{font-size:24px;width:100%}
+  select.btn{max-width:none;flex:1}
+}
+@media (prefers-reduced-motion:reduce){.node,.btn{transition:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Proficiencies</h1>
+  <select class="btn" id="preset" aria-label="Load a preset build"><option value="">Presets…</option></select>
+  <button class="btn" id="statsBtn">Stats</button>
+  <div class="pill" id="pts"><i></i><span>0 / 128 points</span></div>
+  <button class="btn" id="reset">Reset</button>
+  <button class="btn primary" id="share">Copy link</button>
+</header>
+
+<div class="main">
+  <div class="treewrap"><div class="tree" id="tree"></div></div>
+  <aside class="side">
+    <section class="card meta" aria-label="Build details">
+      <label>Build name<input id="mName" maxlength="60" placeholder="Untitled build"></label>
+      <div class="two">
+        <label>Author<input id="mAuthor" maxlength="30" placeholder="You"></label>
+        <label>Target time<input id="mTime" maxlength="12" placeholder="10:30"></label>
+      </div>
+      <label>Notes<textarea id="mNotes" rows="2" maxlength="280" placeholder="Route notes travel with the link"></textarea></label>
+      <div class="actions"><button class="btn" id="copyText">Copy as text</button></div>
+    </section>
+    <section class="card orderc">
+      <div class="orderhead"><h3>Purchase order</h3><span id="orderSum"></span></div>
+      <ol id="order"></ol>
+    </section>
+  </aside>
+</div>
+
+<div class="hints">
+  <span><b>Click</b>Learn, with any missing prerequisites</span>
+  <span><b>Click learned</b>Remove it and what depends on it</span>
+  <span><b>Drag</b>Reorder steps</span>
+  <span><b>Hover</b>Details</span>
+</div>
+<footer>Unofficial fan tool for One Million Coins, ruleset vault-1.2. Not affiliated with the developers. Icons are original, and no game art is included.</footer>
+
+<div id="tip" role="tooltip"></div>
+<div id="stats" role="dialog" aria-modal="true" aria-label="Build stats"><div class="box" id="statsBox"></div></div>
+<div id="toast" role="status"></div>
+
+<script>
+/* Skill records: [id, tree, tier, lane, cost, parent, requires, name, desc, kind, gate]
+   Links store indexes into this list, so only ever append new skills to the end. */
+const DATA = [["1001",0,1,-1,1,"HandTraining",[],"Handling basics","Tool speed +20.02%. | Tool reach +15% of base.",0,0],["1003",0,2,-1,1,"1001",[],"Quick fingers 1","Tool speed +8.55%.",0,0],["1005",0,3,-1,1,"1003",[],"Quick fingers 2","Tool speed +8.55%.",0,0],["1002",0,4,-1,1,"1005",[],"Find your rhythm","Collect steadily to build Flow: up to +60% Hands speed or +30% with other tools. Tool speed +20.02%; Hands coins per grab +108.14%.",0,0],["1007",0,5,-1,1,"1002",[],"Quick fingers 3","Tool speed +8.55%.",0,0],["1004",0,6,-1,1,"1007",[],"Lucky touch","Tool speed +5%. Learned Heavy Strike and lightning: base chance +4 percentage points.",0,0],["1006",0,7,-1,3,"1004",[],"Keep rolling","Keep Flow through missed grabs and pauses up to 1.5s after your tool is ready. Tool reach +40% of base.",0,0],["10015",0,8,-1,1,"1006",[],"Quick wrists","Tool speed +6.35%.",0,0],["10019",0,9,-1,1,"10015",[],"Perfect rhythm","Tool speed +6.81%.",0,0],["1008",0,10,-1,3,"10019",[],"In the zone","Flow increases coins per pickup and pickup radius, reaching +100% coins and +20% radius at full Flow.",2,0],["20001",0,11,-1,2,"1008",[],"Golden grip","Hands coins per grab +19.54%.",0,0],["20002",0,12,-1,3,"20001",[],"A handful of gold","Hands coins per grab +30.89%.",2,0],["HandTraining",0,0,0,1,"",[],"Two at a time","Hands collect 2 coins per grab instead of 1.",1,0],["1011",0,1,0,1,"HandTraining",[],"Flurry 1","Tool speed +5.23%. | Hands coins per grab +11.05%.",0,0],["1013",0,2,0,1,"1011",[],"Flurry 2","Tool speed +5.23%. | Hands coins per grab +11.05%.",0,0],["1015",0,3,0,1,"1013",[],"Flurry 3","Tool speed +5.23%. | Hands coins per grab +11.05%.",0,0],["1017",0,4,0,1,"1015",[],"Flurry 4","Tool speed +5.23%. | Hands coins per grab +11.05%.",0,0],["1012",0,5,0,1,"1017",[],"Helping hand","Hold left click to collect with a ghost hand. Stronger and faster tools improve its grabs. It can trigger your learned Heavy Strike and lightning effects.",1,0],["10115",0,6,0,1,"1012",[],"Practiced grip","Tool speed +3.9%. | Hands coins per grab +8.18%.",0,0],["1014",0,7,0,3,"10115",[],"Extra pair","Three ghost hands take turns gathering gold while you hold left click to collect.",1,0],["10119",0,8,0,1,"1014",[],"Golden touch","Tool speed +3.9%. | Hands coins per grab +8.18%.",0,0],["1016",0,9,0,3,"10119",[],"Busy hands","Five ghost hands search nearby gold, even when you are not aiming directly at it. Keep holding left click to collect.",1,0],["1018",0,10,0,2,"1016",[],"All hands on deck","At full Flow, a sixth ghost hand joins in and the crew grabs faster. Keep holding left click to collect.",2,0],["30011",0,11,0,2,"1018",[],"Helping crew","Ghost hands collect 25% more coins.",0,0],["30012",0,12,0,3,"30011",[],"Golden helpers","Ghost hands collect 40% more coins.",2,0],["1021",0,1,1,1,"HandTraining",[],"Two-handed technique","With Hands, hold right click and release in the sweet spot for a large haul. Stronger grabs and a bigger bag increase the coin limit. Needs nearby gold and bag space.",1,0],["1022",0,2,1,1,"1021",[],"Steady hands","Grip sweet spot lasts 0.015s longer.",1,0],["1023",0,3,1,2,"1022",[],"Deep grip","Increase how much a perfect grip can collect. The haul still depends on nearby gold and available bag space.",1,0],["1024",0,4,1,2,"1023",[],"Quick clasp","Grip sweet spot starts 0.12s sooner.",1,0],["1026",0,4.5,0.5,1,"1023",["MovementTraining","1002"],"Rhythm grip","Collect 25% faster with Flow active and a bag at least half full. Grips become easier to time, and normal pickups resume sooner afterward.",0,0],["30023",0,5,1,3,"1024",[],"Master grip","Perfect grips make later grips stronger and wider, but harder to time. A mistimed release resets the bonuses. Can overfill your bag to 150%; start below full.",2,0],["1025",0,6,1,2,"30023",[],"Wide grip","Grip collection radius +50%.",0,0],["10215",0,7,1,2,"1025",[],"Palm brace","Increase how much a perfect grip can collect. The haul still depends on nearby gold and available bag space.",1,0],["1027",0,8,1,1,"10215",[],"Heavy haul","Increase how much a perfect grip can collect. The haul still depends on nearby gold and available bag space.",1,0],["10219",0,9,1,1,"1027",[],"Knuckle lock","Increase how much a perfect grip can collect. The haul still depends on nearby gold and available bag space.",1,0],["1028",0,10,1,1,"10219",[],"Locked grip","Increase how much a perfect grip can collect. The haul still depends on nearby gold and available bag space.",1,0],["30021",0,11,1,2,"1028",[],"Goldbreaker","Increase how much a perfect grip can collect. The haul still depends on nearby gold and available bag space.",1,0],["30022",0,12,1,2,"30021",[],"Perfect form","Master grip can reach six bonus levels. Its sweet spot arrives sooner, but becomes slightly shorter. A mistimed release still resets the bonuses.",1,0],["1101",1,1,-1,1,"BagTraining",[],"Deeper bag 1","Bag capacity +65%.",0,0],["1102",1,2,-1,1,"1101",[],"Deeper bag 2","Bag capacity +65%.",0,0],["1103",1,3,-1,2,"1102",[],"Deeper bag 3","Bag capacity +150%.",0,0],["1104",1,4,-1,2,"1103",[],"Deeper bag 4","Bag capacity +53.06%.",0,0],["1105",1,5,-1,3,"1104",[],"Deeper bag 5","Bag capacity +117.9%.",0,0],["1106",1,6,-1,2,"1105",[],"Deeper bag 6","Bag capacity +53.06%.",0,0],["11015",1,7,-1,3,"1106",[],"Deep reserves","Bag capacity +79.34%.",0,0],["1107",1,8,-1,1,"11015",[],"Deeper bag 7","Bag capacity +21.5%.",0,0],["11019",1,9,-1,2,"1107",[],"Reinforced lining","Bag capacity +37.61%.",0,0],["1108",1,10,-1,3,"11019",[],"Walking vault","Bag capacity +182.99%. | Deposit speed -20%.",2,0],["30101",1,11,-1,2,"1108",[],"Vault liner","Bag capacity +33.11%.",0,0],["30102",1,12,-1,2,"30101",[],"Bottomless hold","Bag capacity +49.11%.",2,0],["BagTraining",1,0,0,1,"",[],"Your first bag","Bag capacity +100%.",0,0],["1111",1,1,0,1,"BagTraining",[],"Tight packing 1","Bag capacity +30%. | Deposit speed +16%.",0,0],["1112",1,2,0,1,"1111",[],"Tight packing 2","Bag capacity +30%. | Deposit speed +16%.",0,0],["1113",1,3,0,2,"1112",[],"Tight packing 3","Bag capacity +30%. | Deposit speed +16%.",0,0],["1114",1,4,0,2,"1113",[],"Tight packing 4","Bag capacity +24.98%. | Deposit speed +10.13%.",0,0],["1115",1,5,0,2,"1114",[],"Tight packing 5","Bag capacity +24.98%. | Deposit speed +10.13%.",0,0],["1116",1,6,0,2,"1115",[],"Tight packing 6","Bag capacity +24.98%. | Deposit speed +10.13%.",0,0],["11115",1,7,0,1,"1116",[],"Neat stacks","Bag capacity +18.21%. | Deposit speed +7.5%.",0,0],["1117",1,8,0,1,"11115",[],"Tight packing 7","Bag capacity +18.21%. | Deposit speed +7.5%.",0,0],["11119",1,9,0,1,"1117",[],"Packed for delivery","Bag capacity +18.21%. | Deposit speed +7.5%.",0,0],["1118",1,10,0,1,"11119",[],"Tight packing 8","Bag capacity +18.21%. | Deposit speed +7.5%.",0,0],["30111",1,11,0,3,"1118",[],"Perfect packing","Bag capacity +49.11%. | Deposit speed +15.61%.",0,0],["30112",1,12,0,3,"30111",[],"Every inch counts","Bag capacity +80.25%. | Deposit speed +15.61%.",2,0],["1121",1,1,1,1,"BagTraining",[],"Easy unloading 1","Bag capacity +15%. | Unload from 0.15 m farther away.",0,0],["1122",1,2,1,1,"1121",[],"Easy unloading 2","Bag capacity +15%. | Unload from 0.15 m farther away.",0,0],["1123",1,3,1,1,"1122",[],"Easy unloading 3","Bag capacity +15%. | Unload from 0.15 m farther away.",0,0],["1124",1,4,1,1,"1123",[],"Easy unloading 4","Bag capacity +12.61%. | Unload from 0.15 m farther away.",0,0],["1125",1,5,1,1,"1124",[],"Easy unloading 5","Bag capacity +12.61%. | Unload from 0.15 m farther away.",0,0],["1126",1,6,1,1,"1125",[],"Easy unloading 6","Bag capacity +12.61%. | Unload from 0.15 m farther away.",0,0],["11215",1,7,1,1,"1126",[],"Room to spare","Bag capacity +9.32%. | Unload from 0.11 m farther away.",0,0],["1127",1,8,1,1,"11215",[],"Easy unloading 7","Bag capacity +9.32%. | Unload from 0.11 m farther away.",0,0],["11219",1,9,1,1,"1127",[],"Ready to unload","Bag capacity +9.32%. | Unload from 0.11 m farther away.",0,0],["1128",1,10,1,2,"11219",[],"Express bag","Deposit speed +30.15%. | Unload from 0.04 m farther away.",2,0],["30121",1,11,1,2,"1128",[],"Quick release","Bag capacity +20.89%. | Deposit speed +24.45%.",0,0],["30122",1,12,1,2,"30121",[],"Rapid unloading","Deposit speed +35.73%.",2,0],["1201",2,1,-1,1,"DepositTraining",[],"Fast unloading 1","Deposit speed +80%.",0,0],["1202",2,2,-1,1,"1201",[],"Fast unloading 2","Deposit speed +80%.",0,0],["1203",2,3,-1,2,"1202",[],"Station upgrade I","Deposit speed +100%. | Unload from 1.5 m farther away.",0,0],["1204",2,4,-1,2,"1203",[],"Fast unloading 3","Deposit speed +71.84%.",0,0],["1205",2,5,-1,3,"1204",[],"Fast unloading 4","Deposit speed +86.09%.",0,0],["1206",2,6,-1,3,"1205",[],"Station upgrade II","Deposit speed +104.23%. | Unload from 1.5 m farther away.",0,0],["12015",2,7,-1,3,"1206",[],"Open floodgates","Deposit speed +84.18%.",0,0],["1207",2,8,-1,1,"12015",[],"Fast unloading 5","Deposit speed +22.58%.",0,0],["12019",2,9,-1,3,"1207",[],"Rapid transfer","Deposit speed +84.18%.",0,0],["1208",2,10,-1,3,"12019",[],"Gold Rush","Empty your bag at a station after depositing at least 10% of its capacity. During Gold Rush, uncovered, unlocked stations gather gold and chutes collect twice as fast.",2,0],["30201",2,11,-1,2,"1208",[],"Longer rush","Deposit speed +15.61%. | Gold Rush duration +5 seconds.",0,0],["30202",2,12,-1,2,"30201",[],"Lasting rush","Deposit speed +30.15%. | Gold Rush duration +5 seconds.",2,0],["DepositTraining",2,0,0,1,"",[],"Quick deposit","Deposit speed +100%.",0,0],["1211",2,1,0,1,"DepositTraining",[],"Lower hopper 01","Unlock the deposit station on floor 01. Use it once you uncover the area. | Deposit speed +15%. | Unload from 0.5 m farther away.",0,0],["1212",2,2,0,1,"1211",[],"Hopper access","Deposit speed +15%. | Unload from 0.5 m farther away.",0,0],["1213",2,3,0,2,"1212",[],"Lower hopper 02","Deposit speed +15%. | Unload from 0.5 m farther away. | Unlock the deposit station on floor 02. Usable once uncovered.",0,0],["1214",2,4,0,2,"1213",[],"Lower hopper 03","Unlock the deposit station on floor 03, usable once uncovered. | Deposit speed +9.51%. | Unload from 0.5 m farther away.",0,0],["1215",2,5,0,2,"1214",[],"Lower hopper 04","Unlock the deposit station on floor 04, usable once uncovered. | Deposit speed +9.51%. | Unload from 0.5 m farther away.",0,0],["1216",2,6,0,2,"1215",[],"Lower hopper 05","Unlock the deposit station on floor 05, usable once uncovered. | Deposit speed +9.51%. | Unload from 0.5 m farther away.",0,0],["12115",2,7,0,1,"1216",[],"Extended intake","Deposit speed +7.05%. | Unload from 0.38 m farther away.",0,0],["1217",2,8,0,1,"12115",[],"Vault valet","Automatic depositing near uncovered, unlocked stations. Keep using your tool while unloading. | Deposit speed +2.3%. | Unload from 0.13 m farther away.",0,0],["12119",2,9,0,1,"1217",[],"Smooth handoff","Deposit speed +7.05%. | Unload from 0.38 m farther away.",0,0],["1218",2,10,0,1,"12119",[],"Hopper mastery","Deposit speed +7.05%. | Unload from 0.38 m farther away.",0,0],["30211",2,11,0,2,"1218",[],"Fast hoppers","Deposit speed +24.45%. | Unload from 1 m farther away.",0,0],["30212",2,12,0,2,"30211",[],"Hopper express","Deposit speed +35.73%. | Unload from 1 m farther away.",2,0],["1221",2,1,1,1,"DepositTraining",[],"Efficient delivery 1","Deposit speed +15%. | Bag capacity +10%.",0,0],["1222",2,2,1,1,"1221",[],"Pocket Bank","Equip Pocket Bank with 4. Hold and release left click to place it; hold Relocate nearby to pack it. Automatically banks visible nearby gold. A bigger bag improves its rate.",1,0],["1223",2,3,1,1,"1222",[],"Efficient delivery 2","Bag capacity +10%. | Deposit speed +15%.",0,0],["1224",2,4,1,2,"1223",[],"Local branch","Pocket Bank collects from farther away. Hold E within 3 m to unload at half normal speed.",1,0],["1225",2,5,1,3,"1224",[],"Cash flow","Manually empty a bag with at least 25% capacity, capped at 10,000 coins, to boost Pocket Bank collection by 50% for 8 seconds.",0,0],["1226",2,6,1,3,"1225",[],"Express counter","Unload into Pocket Bank at 75% of normal station speed.",0,0],["12215",2,7,1,1,"1226",[],"Bulk delivery","Bag capacity +6.26%. | Deposit speed +7.05%.",0,0],["1227",2,8,1,1,"12215",[],"Efficient delivery 3","Bag capacity +6.26%. | Deposit speed +7.05%.",0,0],["12219",2,9,1,1,"1227",[],"Streamlined cargo","Bag capacity +6.26%. | Deposit speed +7.05%.",0,0],["1228",2,10,1,1,"12219",[],"Efficient delivery 4","Bag capacity +6.26%. | Deposit speed +7.05%.",0,0],["30221",2,11,1,3,"1228",[],"Double returns","Pocket Bank's automatic collection rate +100%, including its maximum rate. Limited by visible gold within range.",0,0],["30222",2,12,1,3,"30221",[],"Branch manager","Pocket Bank's automatic collection rate +100%, including its maximum rate. Bank radius: 9 \u2192 12 m. Bag capacity +33.11%.",2,0],["1301",3,1,-1,1,"MovementTraining",[],"Light gloves","Tool speed +27.54%.",0,0],["1302",3,2,-1,1,"1301",[],"Grippy gloves","Coins per pickup +12.61%. | Then +1 coin per pickup.",0,0],["1303",3,3,-1,1,"1302",[],"Lucky gloves","Tool speed +5%. Learned Heavy Strike and lightning: base chance +3 percentage points.",0,0],["1304",3,4,-1,3,"1303",[],"Quick gloves","Tool speed +39.9%.",0,0],["1305",3,5,-1,2,"1304",[],"Reinforced gloves","Coins per pickup +12.61%. | Then +1 coin per pickup.",0,0],["1306",3,6,-1,1,"1305",[],"Fortune gloves","Tool speed +5%. Learned Heavy Strike and lightning: base chance +3 percentage points.",0,0],["13015",3,7,-1,3,"1306",[],"Fast reflexes","Tool speed +36.6%.",0,0],["1307",3,8,-1,1,"13015",[],"Swift gloves","Tool speed +10.96%.",0,0],["13019",3,9,-1,1,"1307",[],"Light touch","Tool speed +9.18%.",0,0],["1308",3,10,-1,2,"13019",[],"Magnetic footsteps","Walking over gold adds 20% of your tool's coin collection rate. Goes into your bag every 0.75s (minimum 1 coin). Stops when stationary or full.",2,0],["30301",3,11,-1,2,"1308",[],"Expert gloves","Tool speed +14.33%.",0,0],["30302",3,12,-1,2,"30301",[],"Masterwork gloves","Tool speed +22.37%.",2,0],["MovementTraining",3,0,0,1,"",[],"Work gloves","Tool speed +5.89%.",0,0],["1311",3,1,0,1,"MovementTraining",[],"Wider grip 1","Pickup radius +15%. | Tool reach +8% of base.",0,0],["1312",3,2,0,1,"1311",[],"Long reach 1","Tool reach +8% of base.",0,0],["1313",3,3,0,2,"1312",[],"Wider grip 2","Pickup radius +15%. | Tool reach +8% of base.",0,0],["1314",3,4,0,1,"1313",[],"Long reach 2","Tool reach +8% of base.",0,0],["1315",3,5,0,2,"1314",[],"Wider grip 3","Pickup radius +15%. | Tool reach +8% of base.",0,0],["1316",3,6,0,1,"1315",[],"Long reach 3","Tool reach +8% of base.",0,0],["13115",3,7,0,1,"1316",[],"Sweeping reach","Pickup radius +11.05%. | Tool reach +6% of base.",0,0],["1317",3,8,0,1,"13115",[],"Wider grip 4","Pickup radius +11.05%. | Tool reach +6% of base.",0,0],["13119",3,9,0,2,"1317",[],"Open span","Pickup radius +21.75%. | Tool reach +6% of base.",0,0],["1318",3,10,0,1,"13119",[],"Wide coverage","Pickup radius +15%. | Tool reach +8% of base.",0,0],["30311",3,11,0,2,"1318",[],"Spacious grip","Pickup radius +20%. Reach +20% of base.",0,0],["30312",3,12,0,3,"30311",[],"Full coverage","Pickup radius +35%. Reach +30% of base.",2,0],["1321",3,1,1,1,"MovementTraining",[],"Bag pump","Automatically transfer carried coins to your bank: 5% of bag capacity every 20s (minimum 1 coin). Transfer takes 1s. Does not trigger station bonuses.",0,0],["1322",3,2,1,1,"1321",[],"Large pump chamber","Each pump cycle transfers an extra 5% of bag capacity from your bag to the bank.",0,0],["1323",3,3,1,2,"1322",[],"Quick pump","Pump interval -3 seconds.",1,0],["1324",3,4,1,1,"1323",[],"Deep pump chamber","Each pump cycle transfers an extra 5% of bag capacity from your bag to the bank.",0,0],["1325",3,5,1,2,"1324",[],"Rapid pump","Pump interval -3 seconds.",1,0],["1326",3,6,1,1,"1325",[],"High-capacity pump","Each pump cycle transfers an extra 10% of bag capacity from your bag to the bank.",0,0],["13215",3,7,1,2,"1326",[],"Short cycle","Pump interval -2.25 seconds.",1,0],["1327",3,8,1,1,"13215",[],"Fast pump cycle","Pump interval -0.75 seconds.",1,0],["13219",3,9,1,1,"1327",[],"Primed pump","Pump interval -1.5 seconds.",1,0],["1328",3,10,1,2,"13219",[],"Overflow pump","A full bag triggers an extra pump cycle. Cooldown: 60 seconds.",2,0],["30321",3,11,1,1,"1328",[],"Deep pump","Each pump cycle transfers an extra 5% of bag capacity from your bag to the bank.",0,0],["30322",3,12,1,2,"30321",[],"Rapid pump","Pump interval -3s.",2,0],["1401",4,1,-1,1,"UnlockShovel",[],"Scoop rhythm","Tool speed +8.55%.",0,0],["1402",4,2,-1,1,"1401",[],"Heavy strike","Your pickups can trigger a strike that collects extra nearby gold. It triggers more often and collects more coins with the Shovel.",1,0],["1403",4,3,-1,2,"1402",[],"Impact spread 1","Coins per pickup +16.76%. | Heavy Strike radius +15%.",0,0],["1404",4,4,-1,2,"1403",[],"Aftershock","Heavy strikes hit a second coin patch. | Heavy Strike radius +10%.",0,0],["1405",4,5,-1,3,"1404",[],"Impact spread 2","Coins per pickup +24.98%. | Heavy Strike radius +15%.",0,0],["1406",4,6,-1,3,"1405",[],"Deep impact","Heavy Strikes collect more gold across a larger area, with a higher minimum coin limit.",1,0],["14015",4,7,-1,3,"1406",[],"Weight behind it","Coins per pickup +23.92%. | Heavy Strike radius +11.05%.",0,0],["1407",4,8,-1,1,"14015",[],"Impact spread 3","Coins per pickup +7.41%. | Heavy Strike radius +3.56%.",0,0],["14019",4,9,-1,1,"1407",[],"Crushing force","Heavy Strike coins +12.12%.",0,0],["1408",4,10,-1,3,"14019",[],"World breaker","Heavy Strikes collect more gold and reach at least 4 m around the impact. They also trigger more reliably and recharge faster.",2,0],["20401",4,11,-1,2,"1408",[],"Fault line","Heavy Strike coins +31.95%.",0,0],["20402",4,12,-1,3,"20401",[],"Earth mover","Coins per pickup +41.15%. | Heavy Strike coins +31.95%.",2,0],["UnlockShovel",4,0,0,1,"",[],"Unlock shovel","Equip Shovel with 2 to scoop gold. Learned Heavy Strikes are stronger and trigger more often with this tool.",1,1500],["1411",4,1,0,1,"UnlockShovel",[],"Power scoop","With Shovel, hold right click for 0.65s, then release a stronger, wider scoop. Limited by nearby gold and bag space.",1,0],["1412",4,2,0,1,"1411",[],"Jackhammer","With Shovel, hold right click for 0.65s to leap toward your aim and slam on landing. Bigger falls strengthen the impact. Replaces Power scoop. Maximum radius: 15 m, including falls.",1,0],["1413",4,3,0,2,"1412",[],"Heaped blade 1","Coins per pickup +18.41%.",0,0],["1414",4,4,0,2,"1413",[],"Heavy piston","Jackhammer collects more gold, digs deeper and recharges faster. Limited by reachable gold and bag space.",1,0],["1415",4,5,0,2,"1414",[],"Heaped blade 2","Coins per pickup +18.41%.",0,0],["1416",4,6,0,3,"1415",[],"Hammer sweep","Increase Jackhammer's collection radius. Heavy Strike builds benefit too. The total radius cannot exceed 15 m, including falls.",1,0],["14115",4,7,0,1,"1416",[],"Loaded scoop","Coins per pickup +13.52%.",0,0],["1417",4,8,0,1,"14115",[],"Heaped blade 3","Coins per pickup +13.52%.",0,0],["14119",4,9,0,1,"1417",[],"Bountiful haul","Coins per pickup +13.52%.",0,0],["1418",4,10,0,3,"14119",[],"Excavator","Tool speed -22.78%. | Coins per pickup +88.03%.",2,0],["30411",4,11,0,3,"1418",[],"Pile driver","Jackhammer can collect twice as many coins and digs deeper. Limited by reachable gold and bag space.",1,0],["30412",4,12,0,3,"30411",[],"Seismic slam","Jackhammer can collect 50% more coins, digs deeper and recharges faster. Limited by reachable gold and bag space.",2,0],["1421",4,1,1,1,"UnlockShovel",["1402"],"Broad shovel 1","Pickup radius +25%. Heavy strikes also inherit the wider pickup area. | Heavy Strike base chance +3 percentage points (when learned).",0,0],["1422",4,2,1,1,"1421",[],"Broad shovel 2","Pickup radius +25%. | Maximum Shovel radius +0.05 m.",0,0],["1423",4,3,1,2,"1422",[],"Broad shovel 3","Pickup radius +25%. | Heavy Strike base chance +3 percentage points (when learned).",0,0],["1424",4,4,1,2,"1423",[],"Broad shovel 4","Pickup radius +25%. | Maximum Shovel radius +0.1 m.",0,0],["1425",4,5,1,2,"1424",[],"Broad shovel 5","Pickup radius +25%. | Heavy Strike base chance +3 percentage points (when learned).",0,0],["1426",4,4.5,0.5,1,"1423",["BagTraining","1402"],"Heavy load scoop","Learned Heavy Strikes collect 7.92% more coins, including their minimum. Another +50% while your bag is at least half full.",0,0],["14215",4,6,1,2,"1425",[],"Wide arc","Pickup radius +18.22%. | Maximum Shovel radius +0.1 m.",0,0],["1427",4,7,1,1,"14215",[],"Broad shovel 6","Pickup radius +5.74%. | Heavy Strike base chance +3 percentage points (when learned).",0,0],["14219",4,8,1,2,"1427",[],"Full sweep","Pickup radius +18.22%. | Maximum Shovel radius +0.1 m.",0,0],["1428",4,9,1,1,"14219",[],"Broad shovel 7","Pickup radius +5.74%. | Maximum Shovel radius +0.05 m.",0,0],["30421",4,10,1,2,"1428",[],"Wider swing","Pickup radius +20%. | Maximum Shovel radius +0.1 m.",0,0],["30422",4,11,1,1,"30421",[],"Crushing sweep","Heavy Strike base chance +4 percentage points (when learned). | Heavy Strike coins +9.34%.",0,0],["30423",4,12,1,2,"30422",[],"Rolling thunder","Pickup radius +25%. | Heavy Strike coins +14.41%.",2,0],["1501",5,1,-1,1,"UnlockMagnet",[],"Coil tuning","Tool speed +8.55%.",0,0],["1502",5,2,-1,1,"1501",[],"Static discharge","Your pickups can release lightning that jumps between coin patches, collecting extra gold. It collects more gold with the Magnet.",1,0],["1503",5,3,-1,2,"1502",[],"Arcing current 1","Coins per pickup +20.89%. | Lightning jump distance +15%.",0,0],["1504",5,4,-1,2,"1503",[],"Longer chain","Lightning bounces: 5 \u2192 7. Chance to keep bouncing: 25% \u2192 45%. Jump distance +10%.",0,0],["1505",5,5,-1,3,"1504",[],"Arcing current 2","Coins per pickup +33.11%. | Lightning jump distance +15%.",0,0],["1506",5,6,-1,3,"1505",[],"Superconductor","Lightning splits into three chains and collects more gold over a wider area. The chains share each bounce's coin limit.",1,0],["15015",5,7,-1,3,"1506",[],"Spreading current","Coins per pickup +34.94%. | Lightning jump distance +11.05%.",0,0],["1507",5,8,-1,1,"15015",[],"Arcing current 3","Coins per pickup +10.5%. | Lightning jump distance +3.56%.",0,0],["15019",5,9,-1,2,"1507",[],"Surge capacity","Lightning coins per bounce +25.97%.",0,0],["1508",5,10,-1,3,"15019",[],"Chain storm","Lightning spreads through six chains, with more bounces and faster recharge. It triggers more reliably. The chains share each bounce's coin limit.",2,0],["20501",5,11,-1,3,"1508",[],"High voltage","Coins per pickup +29.06%.",0,0],["20502",5,12,-1,3,"20501",[],"Domino storm","Lightning chains: 6 \u2192 8, sharing +25% more coins per bounce. Chance to keep bouncing: 65% \u2192 80%.",2,0],["UnlockMagnet",5,0,0,1,"",[],"Unlock magnet","Magnet [3]: pull up to 3 surface coins every 0.7s, within 5.5 m.",1,3000],["1511",5,1,0,1,"UnlockMagnet",["1502"],"Conductive current 1","Lightning base chance +8 percentage points (when learned). | Lightning coins per bounce +10%.",0,0],["1512",5,2,0,1,"1511",[],"Conductive current 2","Lightning coins per bounce +10%.",0,0],["1513",5,3,0,2,"1512",[],"Conductive current 3","Lightning base chance +8 percentage points (when learned). | Lightning coins per bounce +10%.",0,0],["1514",5,4,0,1,"1513",[],"Conductive current 4","Lightning coins per bounce +10%.",0,0],["1515",5,5,0,2,"1514",[],"Conductive current 5","Lightning base chance +8 percentage points (when learned). | Lightning coins per bounce +10%.",0,0],["1516",5,6,0,1,"1515",[],"Conductive current 6","Lightning coins per bounce +10%.",0,0],["15115",5,7,0,1,"1516",[],"Charged harvest","Lightning coins per bounce +7.41%.",0,0],["1517",5,8,0,1,"15115",[],"Conductive current 7","Lightning base chance +8 percentage points (when learned). | Lightning coins per bounce +2.41%.",0,0],["15119",5,9,0,1,"1517",[],"Concentrated charge","Lightning coins per bounce +7.41%.",0,0],["1518",5,10,0,3,"15119",[],"Gold lance","Lightning coins per bounce +53.62%. Tool reach +70%; pickup radius -55%.",2,0],["30511",5,11,0,3,"1518",[],"Live wire","Lightning collects 50% more coins at each hit.",0,0],["30512",5,12,0,3,"30511",[],"Overcharged chain","Lightning collects 75% more coins at each hit.",2,0],["1521",5,1,1,1,"UnlockMagnet",[],"Wider field 1","Tool reach +15% of base; pickup radius +12%.",0,0],["1522",5,2,1,1,"1521",[],"Magnetic Pulse","With Magnet, press right click to launch lightning through nearby gold. Stronger pickups and lightning upgrades improve the haul. The chains share each bounce's coin limit.",1,0],["1523",5,3,1,2,"1522",[],"Wider field 2","Pickup radius +12%. | Tool reach +15% of base.",0,0],["1524",5,4,1,2,"1523",[],"Powerful pulse","Magnetic Pulse collects more gold and hits a wider area. Its chains share each bounce's coin limit.",1,0],["1525",5,5,1,2,"1524",[],"Wider field 3","Pickup radius +12%. | Tool reach +15% of base.",0,0],["1526",5,4.5,0.5,2,"1523",["DepositTraining","1502"],"Banked charge","Heavy Strike and lightning cooldowns -7.84%. Empty your bag at a station after depositing at least 10% capacity: lightning cooldown is halved for 8s.",0,0],["15215",5,6,1,1,"1525",[],"Field expansion","Pickup radius +8.87%. | Tool reach +11.25% of base.",0,0],["1527",5,7,1,1,"15215",[],"Rapid recharge","Magnetic Pulse cooldown: 4s instead of 6s. | Pickup radius +2.87%. | Tool reach +3.75% of base.",0,0],["15219",5,8,1,1,"1527",[],"Far attraction","Tool reach +11.25% of base.",0,0],["1528",5,9,1,3,"15219",[],"Maelstrom","Pickup radius +100%. Tool reach gains +3.75% of base, then total reach is reduced by 35%.",2,0],["30521",5,10,1,2,"1528",[],"Pulse spread","Magnetic Pulse radius +25%. Its final radius cap rises from 4.5 m to 5.625 m.",0,0],["30522",5,11,1,3,"30521",[],"Pulse overload","Increase how much Magnetic Pulse can collect at each bounce. Its chains share the coin limit.",1,0],["30523",5,12,1,3,"30522",[],"Magnetic surge","Magnetic Pulse collects more gold at each bounce and recharges faster. Its chains share the coin limit.",2,0],["1600",6,0,0,1,"",[],"Wall chutes","Automatically drain 1 coin per second into your bank, shared across all wall chutes.",1,0],["1601",6,1,0,1,"1600",[],"Flow channels","Chute drainage +20%.",0,0],["1602",6,2,0,2,"1601",[],"Wider intakes","Chute drainage +50%.",0,0],["1603",6,3,0,1,"1602",[],"Smooth lining","Chute drainage +25%.",0,0],["1604",6,4,0,3,"1603",[],"Reinforced ducts","Chute drainage +80%.",0,0],["1621",6,5,0,2,"1604",[],"Chute overdrive","Permanent chute drainage +12.5%. Press [R] to triple drainage for 8s. Cooldown: 45s.",0,10000],["1605",6,6,0,2,"1621",[],"Pressure valves","Chute drainage +40%.",0,0],["1606",6,7,0,3,"1605",[],"Powered pumps","Chute drainage +80%.",0,0],["1607",6,8,0,1,"1606",[],"Flow regulator","Chute drainage +25%.",0,0],["1608",6,9,0,3,"1607",[],"Suction turbines","Chute drainage +100%.",0,0],["16015",6,10,0,1,"1608",[],"Overdrive boost","Chute overdrive drains five times the normal rate.",1,0],["30601",6,11,0,2,"16015",[],"Heavy flow","Chute drainage +60%.",0,0],["30602",6,12,0,3,"30601",[],"Gold river","Chute drainage +100%.",2,0]];
+const POINT_COINS = [0,25,60,110,180,270,390,550,750,980,1220,1490,1780,1980,2200,2432,2675,2918,3187,3456,3725,4024,4329,4697,5070,5443,5827,6211,6633,7055,7477,8001,8533,9065,9606,10147,10688,11253,11818,12383,12970,13976,14982,16200,17418,18636,19910,21198,22486,23774,25309,26862,28415,29968,31544,33120,34696,36296,37896,39496,41121,42746,44377,46008,47644,49280,50916,52556,54196,55836,57480,59124,60768,62665,64562,66459,68356,70253,72150,74327,76504,77778,80644,84751,89953,96158,103299,111327,120201,129888,140360,151592,163562,176252,189644,203724,218476,233889,249950,266647,283972,301914,320464,339614,359356,379682,400586,422060,444098,466695,489843,513538,537774,562546,587849,613679,640031,666900,694282,722173,750570,779468,808863,838753,869133,900000,925704,951408,977112];
+const PRESETS = [{"author":"","name":"Recommended + Magnet","notes":"Sim estimate only, not played. Slam every cooldown and fire Magnetic Pulse between slams, keeping bag space free.","order":["HandTraining","DepositTraining","1221","1222","BagTraining","1101","1102","UnlockShovel","1411","1412","1103","1401","1402","1104","1111","1105","1106","11015","1107","11019","1413","1414","1108","1415","30101","30102","1403","1404","1416","1112","14115","1417","14119","1418","30411","30412","1421","1422","1423","1426","1405","1121","1113","1114","MovementTraining","1321","1115","1116","11115","1117","11119","1118","1122","1322","1323","1324","1325","1326","13215","UnlockMagnet","1521","1522","1523","1524","1501","1502","1503","1504","1505","1525","15215","1527","1600","1601","1602","1603","1604","1621","1605"],"time":"10:30"},{"author":"","name":"Recommended (no Magnet stack)","notes":"The WR route with three order tweaks. Sim estimate only, not played.","order":["HandTraining","DepositTraining","1221","1222","BagTraining","1101","1102","UnlockShovel","1411","1412","1103","1401","1402","1104","1111","1105","1106","11015","1107","11019","1413","1414","1108","1415","30101","30102","1403","1404","1416","1112","14115","1417","14119","1418","30411","30412","1421","1422","1423","1426","1405","1121","1113","1114","MovementTraining","1321","1115","1116","11115","1117","11119","1118","1122","1322","1323","1324","1325","1326","13215","UnlockMagnet","1521","1522","1600","1601","1602","1603","1604","1621","1605","1606","1607","1608","16015","30601","30602"],"time":"10:45"},{"author":"Clydo2nd","name":"11:40 WR route (reconstructed)","notes":"Rebuilt from the video. One late Bags skill could not be confirmed.","order":["HandTraining","DepositTraining","1221","1222","BagTraining","1101","1102","UnlockShovel","1411","1412","1103","1401","1402","1104","1105","1106","11015","1107","11019","1413","1108","1414","1111","1403","1404","30101","30102","1415","1416","1112","14115","1417","14119","1418","30411","30412","1421","1422","1423","1426","1405","1121","1113","1114","MovementTraining","1321","1115","1116","11115","1117","11119","1118","1122","1322","1323","1324","1325","1326","13215","UnlockMagnet","1521","1522","1600","1601","1602","1603","1604","1621","1605","1606","1607","1608","16015","30601"],"time":"11:40"}];
+
+const TREES = [
+  {i:0,name:"Hands",sub:"Tool",c:"#f08a3c",lanes:3},
+  {i:4,name:"Shovel",sub:"Tool",c:"#e8543f",lanes:3},
+  {i:5,name:"Magnet",sub:"Tool",c:"#4aa3e8",lanes:3},
+  {i:1,name:"Bags",c:"#e6c63e",lanes:3},
+  {i:2,name:"Deposits",c:"#6cc4e0",lanes:3},
+  {i:3,name:"Utility",c:"#73c76a",lanes:3},
+  {i:6,name:"Chutes",c:"#a585e6",lanes:1}
+];
+const treeOf = Object.fromEntries(TREES.map(t => [t.i, t]));
+
+const GLYPHS = {
+  hand:'<path d="M8 12V6a1.5 1.5 0 0 1 3 0v5m0-6a1.5 1.5 0 0 1 3 0v6m0-5a1.5 1.5 0 0 1 3 0v8c0 4-2.5 6-6 6-3 0-4.5-1.5-6-4l-2-4c-.7-1.4 1.3-2.5 2.3-1.2L8 15"/>',
+  shovel:'<path d="M19 3l2 2-3 3-2-2zM16.5 7.5L10 14M7 11l6 6c-1 3-5 4.5-8 4.5-.3 0-.5-.2-.5-.5C4.500 18 5 13 7 11z"/>',
+  hammer:'<path d="M13 4l7 7-3 3-7-7zM12 9L4 19l1.500 1.500L15 12M14 3l2 0"/>',
+  bolt:'<path d="M13 2L5 14h6l-1 8 9-13h-6z"/>',
+  magnet:'<path d="M5 4h5v8a2 2 0 0 0 4 0V4h5v8a7 7 0 0 1-14 0zM5 8h5M14 8h5"/>',
+  bag:'<path d="M8 8V6a4 4 0 0 1 8 0v2M5 8h14l1.500 12a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1zM10 13h4"/>',
+  pump:'<path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11zM9.500 15a2.500 2.500 0 0 0 2.500 2.500"/>',
+  pipe:'<path d="M3 7h10a5 5 0 0 1 5 5v9M3 13h9v8M18 17h-6"/>',
+  glove:'<path d="M7 21v-4L4 11c-.6-1.300 1.200-2.300 2-1l2 3V5a1.300 1.300 0 0 1 2.600 0v5V4a1.300 1.300 0 0 1 2.600 0v6V5.500a1.300 1.300 0 0 1 2.600 0V11v-2a1.200 1.200 0 0 1 2.400 0v7l-1 5z"/>',
+  box:'<path d="M12 3v9m-4-4l4 4 4-4M4 14v6h16v-6h-5a3 3 0 0 1-6 0z"/>',
+  clock:'<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 3"/>',
+  coin:'<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>',
+  target:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>'
+};
+function glyphFor(s){
+  const n = s.name.toLowerCase();
+  const m = (r) => r.test(n);
+  if (m(/pump/)) return "pump";
+  if (m(/lightning|arc|chain|current|discharge|charge|storm|voltage|wire|lance|conductor|harvest/)) return "bolt";
+  if (m(/pulse|magnet|attraction|maelstrom|surge|coil/)) return "magnet";
+  if (m(/wider|field|reach|broad|spread|expansion|sweep|arc\b/)) return "target";
+  if (m(/hammer|piston|pile|slam|impact|aftershock|strike|fault|earth|world|crush|thunder|force/)) return "hammer";
+  if (m(/shovel|scoop|blade|excavat|haul/)) return "shovel";
+  if (m(/rapid|quick|cycle|recharge|fast|rhythm|speed/)) return "clock";
+  if (m(/glove|grip|knuckle|clasp|palm/)) return "glove";
+  if (m(/bag|packing|lining|reserves|vault|hold|stacks|unloading|packed/)) return "bag";
+  if (m(/chute|flow|duct|valve|intake|turbine|river/)) return "pipe";
+  if (m(/deposit|delivery|hopper|bank|station|floodgate|transfer|cash|branch|valet/)) return "box";
+  if (m(/hand|finger|flurry|wrist|touch/)) return "hand";
+  return {0:"hand",1:"bag",2:"box",3:"glove",4:"shovel",5:"magnet",6:"pipe"}[s.tree] || "coin";
+}
+
+const skills = DATA.map((r, idx) => ({idx, id:r[0], tree:r[1], tier:r[2], lane:r[3], cost:r[4], parent:r[5], req:r[6], name:r[7], desc:r[8], kind:r[9], gate:r[10]}));
+const byId = new Map(skills.map(s => [s.id, s]));
+skills.forEach(s => {
+  s.deps = [s.parent, ...s.req].filter(Boolean).map(id => byId.get(id));
+  s.glyph = glyphFor(s);
+});
+
+const state = {order:[], name:"", author:"", time:"", notes:""};
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => n.toLocaleString("en-US");
+const orderPos = () => new Map(state.order.map((idx, p) => [idx, p]));
+const costOf = (order) => order.reduce((sum, i) => sum + skills[i].cost, 0);
+const maxPoints = POINT_COINS.length - 1;
+
+function coinsForStep(order) {
+  let spent = 0, need = 0;
+  return order.map(i => {
+    const s = skills[i];
+    spent += s.cost;
+    const over = spent > maxPoints;
+    if (!over) need = Math.max(need, POINT_COINS[spent], s.gate);
+    return {spent, need, over};
+  });
+}
+function missingFor(s) {
+  const have = new Set(state.order), out = [];
+  const visit = (x) => {
+    if (have.has(x.idx) || out.includes(x.idx)) return;
+    x.deps.forEach(visit);
+    out.push(x.idx);
+  };
+  visit(s);
+  return out;
+}
+function dependentsOf(idx) {
+  const gone = new Set([idx]);
+  for (const i of state.order) if (skills[i].deps.some(d => gone.has(d.idx))) gone.add(i);
+  return gone;
+}
+function isValid(order) {
+  const seen = new Set();
+  for (const i of order) {
+    if (!skills[i].deps.every(d => seen.has(d.idx))) return false;
+    seen.add(i);
+  }
+  return true;
+}
+function repair(order) {
+  const out = [], seen = new Set();
+  const visit = (i) => {
+    if (seen.has(i)) return;
+    seen.add(i);
+    skills[i].deps.forEach(d => visit(d.idx));
+    out.push(i);
+  };
+  order.forEach(visit);
+  return out;
+}
+
+/* Link format: #b=1.<one byte per step>.<utf-8 meta joined by 0x1f>, both base64url.
+   The leading 1 is the format version. */
+function toB64(bytes) {
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function fromB64(text) {
+  const bin = atob(text.replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(bin, c => c.charCodeAt(0));
+}
+function encodeBuild() {
+  const meta = [state.name, state.author, state.time, state.notes].join("\x1f");
+  const hasMeta = meta.replace(/\x1f/g, "").length > 0;
+  return "1." + toB64(state.order) + (hasMeta ? "." + toB64(new TextEncoder().encode(meta)) : "");
+}
+function decodeBuild(text) {
+  const parts = text.split(".");
+  if (parts[0] !== "1") throw new Error("Unknown link version");
+  const order = Array.from(parts[1] ? fromB64(parts[1]) : []).filter(i => i < skills.length);
+  const [name = "", author = "", time = "", notes = ""] = parts[2] ? new TextDecoder().decode(fromB64(parts[2])).split("\x1f") : [];
+  return {order: repair(order), name, author, time, notes};
+}
+function shareUrl() {
+  const base = location.href.split("#")[0];
+  return base + "#b=" + encodeBuild();
+}
+function syncUrl() {
+  const empty = !state.order.length && !state.name && !state.author && !state.time && !state.notes;
+  history.replaceState(null, "", empty ? location.pathname + location.search : "#b=" + encodeBuild());
+  document.title = (state.name ? state.name + " · " : "") + "One Million Coins Build Planner";
+}
+function loadHash() {
+  const m = location.hash.match(/^#b=(.+)$/);
+  if (!m) return false;
+  try {
+    Object.assign(state, decodeBuild(m[1]));
+    return true;
+  } catch (e) {
+    toast("That build link is damaged");
+    return false;
+  }
+}
+
+const COLS = {};
+function buildTree() {
+  const root = $("tree");
+  const L = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--lane"));
+  const R = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--row"));
+  for (const t of TREES) {
+    const col = document.createElement("section");
+    col.className = "col";
+    col.style.setProperty("--c", t.c);
+    const width = t.lanes * L + 14, height = 13 * R;
+    col.style.width = width + "px";
+    col.innerHTML = `<h2>${t.name}${t.sub ? `<small>(${t.sub})</small>` : ""}</h2>`;
+    const field = document.createElement("div");
+    field.className = "field";
+    field.style.height = height + "px";
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "edges");
+    svg.setAttribute("width", width);
+    svg.setAttribute("height", height);
+    const pos = (s) => ({x: width / 2 + s.lane * L, y: R / 2 + s.tier * R});
+    const list = skills.filter(s => s.tree === t.i);
+    for (const s of list) {
+      const a = pos(s);
+      s.lines = [];
+      if (s.parent) {
+        const b = pos(byId.get(s.parent));
+        const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        ln.setAttribute("x1", b.x); ln.setAttribute("y1", b.y);
+        ln.setAttribute("x2", a.x); ln.setAttribute("y2", a.y);
+        svg.append(ln);
+        s.edge = ln;
+      }
+      const el = document.createElement("button");
+      el.className = "node" + (s.kind === 2 ? " key" : s.kind === 1 ? " sq" : "") + (s.tier % 1 ? " mini" : "");
+      el.setAttribute("aria-label", `${s.name}, ${s.cost} point${s.cost > 1 ? "s" : ""}`);
+      el.style.left = a.x - (s.kind === 1 ? 18 : 16) + "px";
+      el.style.top = a.y - (s.kind === 1 ? 18 : 16) + "px";
+      el.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[s.glyph]}</svg>` + (s.cost > 1 ? `<span class="c">${s.cost}</span>` : "");
+      el.addEventListener("click", () => toggle(s));
+      el.addEventListener("mouseenter", () => showTip(s, el));
+      el.addEventListener("mouseleave", hideTip);
+      el.addEventListener("focus", () => showTip(s, el));
+      el.addEventListener("blur", hideTip);
+      s.el = el;
+      field.append(el);
+    }
+    field.prepend(svg);
+    col.append(field);
+    root.append(col);
+    COLS[t.i] = col;
+  }
+}
+
+function toggle(s) {
+  if (state.order.includes(s.idx)) {
+    const gone = dependentsOf(s.idx);
+    state.order = state.order.filter(i => !gone.has(i));
+    if (gone.size > 1) toast(`Removed ${s.name} and ${gone.size - 1} skill${gone.size > 2 ? "s" : ""} that need it`);
+  } else {
+    const add = missingFor(s);
+    state.order.push(...add);
+    if (add.length > 1) toast(`Added ${add.length - 1} prerequisite${add.length > 2 ? "s" : ""} for ${s.name}`);
+  }
+  $("preset").value = "";
+  render();
+}
+
+function render() {
+  const pos = orderPos();
+  const steps = coinsForStep(state.order);
+  for (const s of skills) {
+    const on = pos.has(s.idx);
+    const open = !on && s.deps.every(d => pos.has(d.idx));
+    s.el.classList.toggle("on", on);
+    s.el.classList.toggle("avail", open);
+    s.el.querySelector(".n")?.remove();
+    if (on) s.el.insertAdjacentHTML("beforeend", `<span class="n">${pos.get(s.idx) + 1}</span>`);
+    if (s.edge) {
+      const pOn = pos.has(byId.get(s.parent).idx);
+      s.edge.setAttribute("class", on && pOn ? "on" : pOn ? "next" : "");
+    }
+  }
+  const spent = costOf(state.order);
+  const pill = $("pts");
+  pill.classList.toggle("over", spent > maxPoints);
+  pill.querySelector("span").textContent = `${spent} / ${maxPoints} points`;
+
+  const list = $("order");
+  list.textContent = "";
+  if (!state.order.length) {
+    list.innerHTML = `<li class="empty" style="display:block;cursor:default">Click a skill to start, or pick a preset.</li>`;
+  }
+  state.order.forEach((i, p) => {
+    const s = skills[i], st = steps[p], t = treeOf[s.tree];
+    const li = document.createElement("li");
+    li.draggable = true;
+    li.dataset.p = p;
+    li.className = st.over ? "bad" : "";
+    li.innerHTML = `<span class="i">${p + 1}</span>
+      <span class="nm" style="--c:${t.c}"><b></b><small><em>${t.name}</em> · ${s.cost} pt${s.cost > 1 ? "s" : ""}</small></span>
+      <span class="co">${st.over ? "No points" : fmt(st.need)}</span>
+      <span class="mv"><button aria-label="Move up">▲</button><button aria-label="Move down">▼</button></span>`;
+    li.querySelector("b").textContent = s.name;
+    const [up, down] = li.querySelectorAll(".mv button");
+    up.onclick = () => move(p, p - 1);
+    down.onclick = () => move(p, p + 1);
+    li.addEventListener("mouseenter", () => s.el.classList.add("pathhi"));
+    li.addEventListener("mouseleave", () => s.el.classList.remove("pathhi"));
+    li.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/plain", String(p)); e.dataTransfer.effectAllowed = "move"; });
+    li.addEventListener("dragover", (e) => { e.preventDefault(); li.classList.add("dragover"); });
+    li.addEventListener("dragleave", () => li.classList.remove("dragover"));
+    li.addEventListener("drop", (e) => { e.preventDefault(); move(+e.dataTransfer.getData("text/plain"), p); });
+    list.append(li);
+  });
+  const last = steps[steps.length - 1];
+  $("orderSum").textContent = state.order.length ? `${state.order.length} skills · ${fmt(last.need)} coins` : "Coins collected";
+  $("mName").value = state.name; $("mAuthor").value = state.author; $("mTime").value = state.time; $("mNotes").value = state.notes;
+  syncUrl();
+}
+
+function move(from, to) {
+  if (to < 0 || to >= state.order.length || from === to) return;
+  const next = state.order.slice();
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  if (!isValid(next)) {
+    const s = skills[item];
+    const other = to < from ? s.deps.find(d => next.indexOf(d.idx) > to) : skills[state.order[to]];
+    toast(to < from ? `${s.name} needs ${other ? other.name : "its prerequisite"} first` : `${other.name} needs ${s.name} first`);
+    render();
+    return;
+  }
+  state.order = next;
+  $("preset").value = "";
+  render();
+}
+
+function showTip(s, el) {
+  const pos = orderPos();
+  const tip = $("tip");
+  const miss = missingFor(s).filter(i => i !== s.idx);
+  const tag = s.kind === 2 ? "KEYSTONE" : s.kind === 1 ? "NEW MECHANIC" : treeOf[s.tree].name.toUpperCase();
+  let st;
+  if (pos.has(s.idx)) st = `<div class="st ok">Learned at step ${pos.get(s.idx) + 1}</div>`;
+  else if (miss.length) st = `<div class="st warn">Needs ${miss.length} more first: ${miss.slice(0, 3).map(i => esc(skills[i].name)).join(", ")}${miss.length > 3 ? "…" : ""}</div>`;
+  else st = `<div class="st">Available</div>`;
+  const others = s.req.map(id => esc(byId.get(id).name));
+  tip.innerHTML = `<h4>${esc(s.name)}</h4><div class="tag">${tag} · ${s.cost} POINT${s.cost > 1 ? "S" : ""}</div><p>${esc(s.desc)}</p>
+    ${others.length ? `<div class="st">Also requires ${others.join(", ")}</div>` : ""}
+    ${s.gate ? `<div class="st">Needs ${fmt(s.gate)} coins collected</div>` : ""}${st}`;
+  tip.style.display = "block";
+  const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = r.right + 10, y = r.top - 6;
+  if (x + w > innerWidth - 8) x = r.left - w - 10;
+  if (x < 8) { x = Math.max(8, Math.min(r.left, innerWidth - w - 8)); y = r.bottom + 8; }
+  y = Math.max(8, Math.min(y, innerHeight - h - 8));
+  tip.style.left = x + "px";
+  tip.style.top = y + "px";
+}
+function hideTip() { $("tip").style.display = "none"; }
+function esc(t) { return t.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+let toastTimer;
+function toast(msg) {
+  const el = $("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2400);
+}
+async function copy(text, done) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.append(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
+  toast(done);
+}
+function buildText() {
+  const steps = coinsForStep(state.order);
+  const head = [state.name || "Untitled build", state.author && `by ${state.author}`, state.time && `target ${state.time}`].filter(Boolean).join(" · ");
+  const lines = state.order.map((i, p) => `${p + 1}. ${skills[i].name} (${treeOf[skills[i].tree].name}) at ${fmt(steps[p].need)} coins`);
+  return [head, state.notes, ...lines, shareUrl()].filter(Boolean).join("\n");
+}
+
+function showStats() {
+  const pos = orderPos(), steps = coinsForStep(state.order), box = $("statsBox");
+  const per = TREES.map(t => ({t, pts: state.order.filter(i => skills[i].tree === t.i).reduce((a, i) => a + skills[i].cost, 0)}));
+  const top = Math.max(1, ...per.map(p => p.pts));
+  const miles = ["1222", "1412", "30412", "1321", "1522", "1524", "1621"].map(id => {
+    const s = byId.get(id), p = pos.get(s.idx);
+    return `<tr><td>${esc(s.name)}</td>` + (p === undefined ? `<td class="no">Not in build</td>` : `<td>Step ${p + 1} · ${fmt(steps[p].need)} coins</td>`) + `</tr>`;
+  }).join("");
+  box.innerHTML = `<div class="boxhead"><h3 style="margin:0;font:400 22px var(--title);letter-spacing:1px;color:#f7e6b0">Build stats</h3><button class="btn" id="closeStats">Close</button></div>
+    ${per.map(p => `<div class="bar" style="--c:${p.t.c}"><span>${p.t.name}</span><div><i style="width:${p.pts / top * 100}%"></i></div><span>${p.pts}</span></div>`).join("")}
+    <table>${miles}</table>
+    <p style="color:var(--dim);font-size:12px;margin:10px 0 0">Coins mean lifetime coins collected, which is what earns points. A step's figure is the earliest it can be bought, not a time estimate.</p>`;
+  $("stats").classList.add("show");
+  $("closeStats").onclick = closeStats;
+  $("closeStats").focus();
+}
+function closeStats() { $("stats").classList.remove("show"); $("statsBtn").focus(); }
+
+function bind() {
+  for (const [id, key] of [["mName", "name"], ["mAuthor", "author"], ["mTime", "time"], ["mNotes", "notes"]]) {
+    $(id).addEventListener("input", (e) => { state[key] = e.target.value; syncUrl(); });
+  }
+  $("share").onclick = () => copy(shareUrl(), "Link copied");
+  $("copyText").onclick = () => copy(buildText(), "Build copied as text");
+  $("reset").onclick = () => {
+    Object.assign(state, {order: [], name: "", author: "", time: "", notes: ""});
+    $("preset").value = "";
+    render();
+  };
+  $("statsBtn").onclick = showStats;
+  $("stats").addEventListener("click", (e) => { if (e.target.id === "stats") closeStats(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("stats").classList.contains("show")) closeStats(); });
+  for (const [p, b] of PRESETS.entries()) {
+    const o = document.createElement("option");
+    o.value = p; o.textContent = b.name;
+    $("preset").append(o);
+  }
+  $("preset").onchange = (e) => {
+    if (e.target.value === "") return;
+    const b = PRESETS[+e.target.value];
+    Object.assign(state, {order: repair(b.order.map(id => byId.get(id).idx)), name: b.name, author: b.author, time: b.time, notes: b.notes});
+    render();
+  };
+  addEventListener("hashchange", () => { if (loadHash()) render(); });
+}
+
+buildTree();
+bind();
+loadHash();
+render();
+</script>
+</body>
+</html>
